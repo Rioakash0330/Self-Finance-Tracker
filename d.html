@@ -1,0 +1,254 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Self Finance Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .feature-details {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4">
+
+  <header class="bg-indigo-600 text-white p-6 rounded-xl shadow-lg text-center">
+    <h1 class="text-4xl font-extrabold bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-600 bg-clip-text text-transparent drop-shadow-lg">✨ Self Finance Tracker ✨</h1>
+    <p class="text-lg mt-2">Track your income, expenses, and investments easily.</p>
+  </header>
+
+  <main class="space-y-6 mt-6">
+
+    <!-- Income Section -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-xl font-semibold text-indigo-600 mb-2">💰 Income</h2>
+      <button onclick="toggleIncomeForm()" class="bg-indigo-500 hover:bg-indigo-700 text-white py-2 px-4 rounded">➕ Add Income</button>
+      <div class="mt-4 space-y-2 hidden" id="incomeForm">
+        <input type="text" id="incomeSource" placeholder="Income source (e.g. Salary)" class="w-full p-2 border rounded">
+        <input type="number" id="incomeAmount" placeholder="Amount" class="w-full p-2 border rounded">
+        <button onclick="addIncome()" class="bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded">Submit Income</button>
+      </div>
+      <ul id="incomeList" class="list-disc list-inside mt-4"></ul>
+    </section>
+
+    <!-- Expenses Section -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-xl font-semibold text-indigo-600 mb-2">💸 Expenses</h2>
+      <button onclick="toggleExpenseForm()" class="bg-indigo-500 hover:bg-indigo-700 text-white py-2 px-4 rounded">➖ Add Expense</button>
+      <div class="mt-4 space-y-2 hidden" id="expenseForm">
+        <input type="text" id="expenseName" placeholder="Expense (e.g. Food)" class="w-full p-2 border rounded">
+        <input type="number" id="expenseAmount" placeholder="Amount" class="w-full p-2 border rounded">
+        <button onclick="addExpense()" class="bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded">Submit Expense</button>
+      </div>
+      <ul id="expenseList" class="list-disc list-inside mt-4"></ul>
+    </section>
+
+    <!-- Balance Overview -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-xl font-semibold text-indigo-600 mb-2">📊 Balance Overview</h2>
+      <div class="text-2xl font-bold" id="balance">Balance: ₹0</div>
+    </section>
+
+    <!-- Pie Chart -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-xl font-semibold text-indigo-600 mb-2">📊 Expense Distribution</h2>
+      <div class="w-full max-w-sm mx-auto">
+        <canvas id="expensePieChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Goal Setting -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-xl font-semibold text-indigo-600 mb-2">🎯 Set Your Financial Goals</h2>
+      <div class="space-y-2">
+        <input type="text" id="goalName" placeholder="Goal Name (e.g. Buy a Bike)" class="w-full p-2 border rounded">
+        <input type="number" id="goalAmount" placeholder="Target Amount (e.g. 50000)" class="w-full p-2 border rounded">
+        <input type="date" id="goalDeadline" class="w-full p-2 border rounded">
+        <button onclick="addGoal()" class="bg-indigo-600 hover:bg-indigo-800 text-white py-2 px-4 rounded">➕ Add Goal</button>
+      </div>
+      <ul id="goalList" class="list-disc list-inside mt-4"></ul>
+    </section>
+
+    <!-- Investment Ideas Section -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-xl font-semibold text-indigo-600 mb-4">📈 Investment Ideas</h2>
+      <div class="flex flex-wrap gap-3 mb-6">
+        <button onclick="showIdeas('mutual')" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">Mutual Funds</button>
+        <button onclick="showIdeas('stocks')" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">Stocks</button>
+        <button onclick="showIdeas('rd')" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded">Recurring Deposits</button>
+        <button onclick="showIdeas('gold')" class="bg-pink-500 hover:bg-pink-700 text-white px-4 py-2 rounded">Gold/Silver</button>
+        <button onclick="showIdeas('emergency')" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">Emergency Fund</button>
+      </div>
+      <ul id="ideaList" class="list-disc pl-6 text-gray-700 space-y-2 text-lg">
+        <li>Select a category to view ideas.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer class="text-center text-sm text-gray-500 mt-10">
+    <p>&copy; 2025 Self Finance Tracker. All rights reserved.</p>
+  </footer>
+
+  <script>
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let expenseData = {};
+    let pieChart = null;
+
+    function toggleIncomeForm() {
+      document.getElementById("incomeForm").classList.toggle("hidden");
+    }
+
+    function toggleExpenseForm() {
+      document.getElementById("expenseForm").classList.toggle("hidden");
+    }
+
+    function addIncome() {
+      const source = document.getElementById("incomeSource").value.trim();
+      const amount = parseFloat(document.getElementById("incomeAmount").value);
+      if (source && amount && amount > 0) {
+        totalIncome += amount;
+        document.getElementById("incomeList").innerHTML += `<li>${source}: ₹${amount}</li>`;
+        updateBalance();
+        document.getElementById("incomeSource").value = "";
+        document.getElementById("incomeAmount").value = "";
+      }
+    }
+
+    function addExpense() {
+      const name = document.getElementById("expenseName").value.trim();
+      const amount = parseFloat(document.getElementById("expenseAmount").value);
+      if (name && amount && amount > 0) {
+        totalExpense += amount;
+        if (!expenseData[name]) {
+          expenseData[name] = 0;
+        }
+        expenseData[name] += amount;
+        document.getElementById("expenseList").innerHTML += `<li>${name}: ₹${amount}</li>`;
+        updateBalance();
+        updatePieChart();
+        document.getElementById("expenseName").value = "";
+        document.getElementById("expenseAmount").value = "";
+      }
+    }
+
+    function updateBalance() {
+      const balance = totalIncome - totalExpense;
+      document.getElementById("balance").innerText = `Balance: ₹${balance}`;
+    }
+
+    function updatePieChart() {
+      const ctx = document.getElementById("expensePieChart").getContext("2d");
+      const labels = Object.keys(expenseData);
+      const data = Object.values(expenseData);
+
+      if (pieChart) pieChart.destroy();
+
+      pieChart = new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels,
+          datasets: [{
+            label: "Expenses",
+            data,
+            backgroundColor: ["#f87171", "#60a5fa", "#34d399", "#fbbf24", "#a78bfa", "#f472b6", "#38bdf8", "#4ade80", "#facc15", "#c084fc"]
+          }]
+        },
+        options: { responsive: true }
+      });
+    }
+
+    function addGoal() {
+      const goalName = document.getElementById("goalName").value.trim();
+      const goalAmount = document.getElementById("goalAmount").value.trim();
+      const goalDeadline = document.getElementById("goalDeadline").value;
+
+      if (goalName && goalAmount && goalDeadline) {
+        const listItem = `<li><strong>${goalName}</strong>: ₹${goalAmount} by ${goalDeadline}</li>`;
+        document.getElementById("goalList").innerHTML += listItem;
+
+        document.getElementById("goalName").value = "";
+        document.getElementById("goalAmount").value = "";
+        document.getElementById("goalDeadline").value = "";
+      }
+    }
+
+    const investmentIdeas = {
+      mutual: [
+        "Axis Bluechip Fund",
+        "Mirae Asset Large Cap Fund",
+        "Parag Parikh Flexi Cap Fund",
+        "UTI Nifty Index Fund",
+        "HDFC Mid-Cap Opportunities Fund",
+        "ICICI Prudential Balanced Advantage Fund",
+        "Nippon India Small Cap Fund",
+        "Quant Active Fund",
+        "SBI Equity Hybrid Fund",
+        "Kotak Emerging Equity Fund"
+      ],
+      stocks: [
+        "Reliance Industries",
+        "Tata Consultancy Services (TCS)",
+        "HDFC Bank",
+        "Infosys",
+        "ICICI Bank",
+        "Larsen & Toubro",
+        "Axis Bank",
+        "Bharti Airtel",
+        "Maruti Suzuki",
+        "ITC Limited"
+      ],
+      rd: [
+        "SBI Recurring Deposit",
+        "HDFC RD",
+        "ICICI Bank RD",
+        "Post Office RD",
+        "Axis Bank RD",
+        "Kotak Mahindra Bank RD",
+        "IDFC First RD",
+        "IndusInd Bank RD",
+        "YES Bank RD",
+        "RBL Bank RD"
+      ],
+      gold: [
+        "Sovereign Gold Bonds",
+        "Gold ETFs",
+        "Digital Gold",
+        "Gold Mutual Funds",
+        "Physical Gold (Jewelry/Coins)",
+        "Gold Savings Schemes",
+        "Gold Accumulation Plans",
+        "Jewelry from trusted brands",
+        "Silver ETFs",
+        "Silver Bars/Coins"
+      ],
+      emergency: [
+        "SBI Savings Account",
+        "ICICI iWish Flexible RD",
+        "Liquid Mutual Funds",
+        "Fixed Deposits",
+        "Sweep-in Fixed Deposits",
+        "Digital Wallet Savings",
+        "Short-term Debt Funds",
+        "Recurring Deposits with auto-debit",
+        "Gold-backed Loans",
+        "Cash Reserve at Home"
+      ]
+    };
+
+    function showIdeas(category) {
+      const ideaList = document.getElementById('ideaList');
+      ideaList.innerHTML = "";
+      investmentIdeas[category].forEach(idea => {
+        const li = document.createElement('li');
+        li.textContent = idea;
+        ideaList.appendChild(li);
+      });
+    }
+  </script>
+
+</body>
+</html>
